@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 
-PROGRAMAS_DISPONIBLES = ["write.exe", "cmd.exe", "explorer.exe"]
+PROGRAMAS_DISPONIBLES = ["write.exe", "calc.exe", "explorer.exe"]
 procesos_activos = []
 
 root = tk.Tk()
@@ -60,8 +60,12 @@ def actualizar_recursos():
         valores = tree.item(pid)["values"]
         if valores:
             programa = valores[1]
-            cpu, ram = USO_SIMULADO.get(programa, ("5", "10"))
+            base = int(str(root.tk.call("clock", "milliseconds"))[-2:])
+            cpu = str((base * 3) % 100)
+            ram = str((base * 7) % 500 + 50)
             tree.item(pid, values=(valores[0], programa, cpu, ram))
+    root.after(500, actualizar_recursos)  # Repetir cada 0.5 segundos
+
 
 # --- Interfaz de controles ---
 frame_botones = tk.Frame(root)
@@ -79,4 +83,5 @@ btn_cerrar.pack(side=tk.LEFT, padx=5)
 btn_actualizar = tk.Button(frame_botones, text="Actualizar recursos", command=actualizar_recursos)
 btn_actualizar.pack(side=tk.LEFT, padx=5)
 
+actualizar_recursos()   
 root.mainloop()
