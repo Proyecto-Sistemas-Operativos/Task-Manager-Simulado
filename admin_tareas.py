@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 
-PROGRAMAS_DISPONIBLES = ["write.exe", "calc.exe", "explorer.exe"]
+PROGRAMAS_DISPONIBLES = ["write.exe", "calc.exe", "excel"]
 procesos_activos = []
 
 root = tk.Tk()
@@ -19,8 +19,8 @@ contador_pid = 1000
 
 USO_SIMULADO = {
     "write.exe": ("12", "25"),
-    "cmd.exe": ("7", "15"),
-    "explorer.exe": ("20", "90")
+    "calc.exe": ("7", "15"),
+    "excel": ("30", "100")
 }
 
 programa_seleccionado = tk.StringVar(value=PROGRAMAS_DISPONIBLES[0])
@@ -34,9 +34,9 @@ def agregar_proceso():
     procesos_activos.append((pid, programa))
     contador_pid += 1
 
-    # Abrir sin colgar la interfaz
+    # Lanzar el programa real
     try:
-        root.tk.call('exec', 'cmd', '/c', 'start', programa)
+        root.tk.call('exec', 'cmd', '/c', 'start', '', programa)
     except Exception as e:
         print(f"No se pudo abrir {programa}: {e}")
 
@@ -49,9 +49,10 @@ def cerrar_proceso():
             tree.delete(pid)
             procesos_activos[:] = [p for p in procesos_activos if p[0] != pid]
 
-            # Cerrar el programa real
+            # Cerrar el proceso real (ajustar nombre de ejecutable si es Excel)
+            exe_name = "EXCEL.EXE" if programa == "excel" else programa
             try:
-                root.tk.call('exec', 'taskkill', '/IM', programa, '/F')
+                root.tk.call('exec', 'taskkill', '/IM', exe_name, '/F')
             except Exception as e:
                 print(f"No se pudo cerrar {programa}: {e}")
 
@@ -64,8 +65,7 @@ def actualizar_recursos():
             cpu = str((base * 3) % 100)
             ram = str((base * 7) % 500 + 50)
             tree.item(pid, values=(valores[0], programa, cpu, ram))
-    root.after(500, actualizar_recursos)  # Repetir cada 0.5 segundos
-
+    root.after(500, actualizar_recursos)
 
 # --- Interfaz de controles ---
 frame_botones = tk.Frame(root)
@@ -83,5 +83,5 @@ btn_cerrar.pack(side=tk.LEFT, padx=5)
 btn_actualizar = tk.Button(frame_botones, text="Actualizar recursos", command=actualizar_recursos)
 btn_actualizar.pack(side=tk.LEFT, padx=5)
 
-actualizar_recursos()   
+actualizar_recursos()
 root.mainloop()
