@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 
-PROGRAMAS_DISPONIBLES = ["write.exe", "calc.exe", "excel"]
+PROGRAMAS_DISPONIBLES = ["wordpad.exe", "calc.exe", "EXCEL.EXE"]
 procesos_activos = []
 
 root = tk.Tk()
@@ -15,24 +15,43 @@ tree.heading("CPU", text="Uso CPU (%)")
 tree.heading("RAM", text="Uso RAM (MB)")
 tree.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-contador_pid = 1000
-
-USO_SIMULADO = {
-    "write.exe": ("12", "25"),
-    "calc.exe": ("7", "15"),
-    "excel": ("30", "100")
-}
-
 programa_seleccionado = tk.StringVar(value=PROGRAMAS_DISPONIBLES[0])
 
+def obtener_procesos():
+    try:
+        wordpad = root.tk.call('exec', 'tasklist','/FI','IMAGENAME eq wordpad.exe', '/V', '/FO', 'list')
+        calc = root.tk.call('exec', 'tasklist','/FI','IMAGENAME eq CalculatorApp.exe', '/V', '/FO', 'list')
+        excel = root.tk.call('exec', 'tasklist','/FI','IMAGENAME eq EXCEL.exe', '/V', '/FO', 'list')
+        if (wordpad.startswith("INFOR")):
+            wordpad = ""
+        if (calc.startswith("INFOR")):
+            calc = ""
+        if (excel.startswith("INFOR")):
+            excel = ""
+        parse_lista_procesos([wordpad,calc,excel])
+    except Exception as e:
+        print(f"Error: {e}")
+
+def parse_lista_procesos(tasklists):
+    procesos_activos.clear()
+    for tasklist in tasklists:
+        if (len(tasklist) > 0):
+            procesos = tasklist.strip().split("\n\n")
+            for proceso in procesos:
+                lineas = proceso.strip().split("\n")
+                data_proceso = {}
+                for linea in lineas:
+                    if ":" in linea:
+                        key, value = linea.split(":",1)
+                        data_proceso[key.strip()] = value.strip()
+                pid = data_proceso.get("PID")
+                programa = data_proceso.get("Nombre de imagen")
+                ram = data_proceso.get("Uso de memoria")
+                cpu = data_proceso.get("Tiempo de CPU")
+                procesos_activos.append((pid,programa,cpu,ram))
+    
 def agregar_proceso():
-    global contador_pid
     programa = programa_seleccionado.get()
-    pid = str(contador_pid)
-    cpu, ram = USO_SIMULADO.get(programa, ("5", "10"))
-    tree.insert("", "end", iid=pid, values=(pid, programa, cpu, ram))
-    procesos_activos.append((pid, programa))
-    contador_pid += 1
 
     # Lanzar el programa real
     try:
@@ -48,24 +67,22 @@ def cerrar_proceso():
             programa = valores[1]
             tree.delete(pid)
             procesos_activos[:] = [p for p in procesos_activos if p[0] != pid]
-
-            # Cerrar el proceso real (ajustar nombre de ejecutable si es Excel)
-            exe_name = "EXCEL.EXE" if programa == "excel" else programa
             try:
-                root.tk.call('exec', 'taskkill', '/IM', exe_name, '/F')
+                root.tk.call('exec', 'taskkill', '/PID', pid, '/F')
             except Exception as e:
                 print(f"No se pudo cerrar {programa}: {e}")
 
 def actualizar_recursos():
-    for pid, _ in procesos_activos:
-        valores = tree.item(pid)["values"]
-        if valores:
-            programa = valores[1]
-            base = int(str(root.tk.call("clock", "milliseconds"))[-2:])
-            cpu = str((base * 3) % 100)
-            ram = str((base * 7) % 500 + 50)
-            tree.item(pid, values=(valores[0], programa, cpu, ram))
-    root.after(500, actualizar_recursos)
+    for item in tree.get_children():
+        tree.delete(item)
+
+    obtener_procesos()
+
+    for proceso in procesos_activos:
+        tree.insert("", "end", iid=proceso[0], values=(proceso[0], proceso[1], proceso[2], proceso[3]))
+    
+    root.after(4000, actualizar_recursos)
+    
 
 # --- Interfaz de controles ---
 frame_botones = tk.Frame(root)
