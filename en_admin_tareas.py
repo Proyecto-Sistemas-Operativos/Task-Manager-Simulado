@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 
-PROGRAMAS_DISPONIBLES = ["wordpad.exe", "calc.exe", "firefox.exe"]
+PROGRAMAS_DISPONIBLES = ["wordpad.exe", "calc.exe", "excel.exe"]
 procesos_activos = []
 ultimos_tiempos_cpu = {}  # Almacena {pid: (tiempo_cpu, timestamp)}
 ultima_actualizacion = None  # Almacena el tiempo de la última actualización
@@ -10,9 +10,10 @@ root = tk.Tk()
 root.title("Simulador de Administrador de Tareas")
 root.geometry("700x450")
 
-tree = ttk.Treeview(root, columns=("PID", "Programa", "CPU", "RAM"), show="headings")
+tree = ttk.Treeview(root, columns=("PID", "Programa", "Estado", "CPU", "RAM"), show="headings")
 tree.heading("PID", text="PID")
 tree.heading("Programa", text="Programa")
+tree.heading("Estado", text="Estado")
 tree.heading("CPU", text="Uso CPU (%)")
 tree.heading("RAM", text="Uso RAM (MB)")
 tree.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
@@ -51,22 +52,29 @@ def calcular_porcentaje_cpu(pid, tiempo_actual, intervalo):
 def obtener_procesos():
     try:
         wordpad = root.tk.call('exec', 'tasklist','/FI','IMAGENAME eq wordpad.exe', '/V', '/FO', 'list')
-        calc = root.tk.call('exec', 'tasklist','/FI','IMAGENAME eq CalculatorApp.exe', '/V', '/FO', 'list')
-        firefox = root.tk.call('exec', 'tasklist','/FI','IMAGENAME eq firefox.exe', '/V', '/FO', 'list')
+        calc = root.tk.call('exec', 'tasklist','/FI','IMAGENAME eq calc.exe', '/V', '/FO', 'list')
+        excel = root.tk.call('exec', 'tasklist','/FI','IMAGENAME eq excel.exe', '/V', '/FO', 'list')
         if (wordpad.startswith("INFO")):
             wordpad = ""
         if (calc.startswith("INFO")):
             calc = ""
-        if (firefox.startswith("INFO")):
-            firefox = ""
-        parse_lista_procesos([wordpad,calc,firefox])
+        if (excel.startswith("INFO")):
+            excel = ""
+        parse_lista_procesos([wordpad,calc,excel])
     except Exception as e:
         print(f"Error: {e}")
 
 def parse_lista_procesos(tasklists):
     procesos_activos.clear()
+    contador_programas = {}
 
-    intervalo=4.0
+    traduccion_estados = {
+        "Running": "En ejecución",
+        "Suspend": "Suspendido",
+        "Waiting": "En espera",
+        "Unknown": "En ejecución"  
+    }
+    
     for tasklist in tasklists:
         if (len(tasklist) > 0):
             procesos = tasklist.strip().split("\n\n")
@@ -77,23 +85,44 @@ def parse_lista_procesos(tasklists):
                     if ":" in linea:
                         key, value = linea.split(":",1)
                         data_proceso[key.strip()] = value.strip()
+
                 pid = data_proceso.get("PID")
                 programa = data_proceso.get("Image Name")
+
+                if not programa:
+                    continue
+
+                estado_original=data_proceso.get("Status", "Desconocido")
+
+                estado=traduccion_estados.get(estado_original, "En Ejecucion")
+
+                if estado_original in traduccion_estados.values():
+                    estado=estado_original
+
+                # Determinar estado
+                if programa in contador_programas:
+                    estado = "Repetido"
+                else:
+                    contador_programas[programa] = pid
+                   
+                    
+                
                 ram = data_proceso.get("Mem Usage", "0 K").replace(",", "").split()[0]
                 cpu = data_proceso.get("CPU Time", "0:00:00")
+                ram_mb = int(ram) / 1024 if ram.isdigit() else 0
                 #procesos_activos.append((pid,programa,cpu,ram))
 
-                # Convertir RAM a MB
-                try:
-                    ram_mb = int(ram) / 1024
-                except:
-                    ram_mb = 0
 
                 #Calcular uso de CPU
                 tiempo_cpu_seg = obtener_tiempo_cpu_segundos(cpu)
-                porcentaje_cpu = calcular_porcentaje_cpu(pid, tiempo_cpu_seg, intervalo)
+                porcentaje_cpu = calcular_porcentaje_cpu(pid, tiempo_cpu_seg, 2.0)
                 
-                procesos_activos.append((pid, programa, f"{porcentaje_cpu:.2f}%",  f"{ram_mb:.2f}"))
+                procesos_activos.append((
+                    pid, 
+                    programa, 
+                    estado,
+                    f"{porcentaje_cpu:.2f}%",  
+                    f"{ram_mb:.2f}"))
     
 def agregar_proceso():
     programa = programa_seleccionado.get()
@@ -108,7 +137,7 @@ def cerrar_proceso():
     seleccionado = tree.selection()
     for pid in seleccionado:
         valores = tree.item(pid)["values"]
-        if valores:
+        if valores and valores[0]:
             programa = valores[1]
             tree.delete(pid)
             procesos_activos[:] = [p for p in procesos_activos if p[0] != pid]
@@ -126,7 +155,8 @@ def actualizar_recursos():
     obtener_procesos()
 
     for proceso in procesos_activos:
-        tree.insert("", "end", iid=proceso[0], values=(proceso[0], proceso[1], proceso[2], proceso[3]))
+        tree.insert("", "end", iid=proceso[0], values=(proceso[0], proceso[1], proceso[2],
+        proceso[3], proceso[4]))
     
     root.after(2000, actualizar_recursos)
     
