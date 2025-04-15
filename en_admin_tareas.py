@@ -11,6 +11,9 @@ root = tk.Tk()
 root.title("Simulador de Administrador de Tareas")
 root.geometry("700x450")
 
+#ruta del icono del heading
+root.iconbitmap("iconos\explorador-archivos-16.ico") 
+
 #Frame contenedor para agregar el Treeview y los Scrollbars
 contenedor=tk.Frame(root)
 contenedor.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
