@@ -6,17 +6,37 @@ procesos_activos = []
 ultimos_tiempos_cpu = {}  # Almacena {pid: (tiempo_cpu, timestamp)}
 ultima_actualizacion = None  # Almacena el tiempo de la última actualización
 
+
 root = tk.Tk()
 root.title("Simulador de Administrador de Tareas")
 root.geometry("700x450")
 
-tree = ttk.Treeview(root, columns=("PID", "Programa", "Estado", "CPU", "RAM"), show="headings")
+#Frame contenedor para agregar el Treeview y los Scrollbars
+contenedor=tk.Frame(root)
+contenedor.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+#Creacion del Treeview
+tree = ttk.Treeview(contenedor, columns=("PID", "Programa", "Estado", "CPU", "RAM"), show="headings")
+
+#Creacion y configuracion de scrollbars
+scroll_y = ttk.Scrollbar(contenedor, orient="vertical", command=tree.yview)
+scroll_x = ttk.Scrollbar(contenedor, orient="horizontal", command=tree.xview)
+tree.configure(yscrollcommand=scroll_y.set, xscrollcommand=scroll_x.set)
+
+#Configuración de los headings
 tree.heading("PID", text="PID")
 tree.heading("Programa", text="Programa")
 tree.heading("Estado", text="Estado")
 tree.heading("CPU", text="Uso CPU (%)")
 tree.heading("RAM", text="Uso RAM (MB)")
-tree.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+#Configuracion del layout usando grid
+tree.grid(row=0, column=0, sticky="nsew")
+scroll_y.grid(row=0, column=1, sticky="ns")
+scroll_x.grid(row=1, column=0, sticky="ew")
+
+contenedor.grid_rowconfigure(0, weight=1)  # Permitir que el Treeview crezca
+contenedor.grid_columnconfigure(0, weight=1)  # Permitir que el Treeview crezca
 
 programa_seleccionado = tk.StringVar(value=PROGRAMAS_DISPONIBLES[0])
 
@@ -155,9 +175,7 @@ def cerrar_proceso():
 
             except ValueError:
                 print(f"Error: PID '{valores[0]}' no es numérico")
-                # Muestra mensaje en interfaz
-                tree.item(pid, tags=('error',))
-                tree.tag_configure('error', background='#ffdddd')
+                
             except Exception as e:
                 print(f"No se pudo cerrar {programa}: {e}")
 
