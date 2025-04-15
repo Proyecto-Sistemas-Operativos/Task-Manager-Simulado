@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 
-PROGRAMAS_DISPONIBLES = ["wordpad.exe", "calc.exe", "excel.exe"]
+PROGRAMAS_DISPONIBLES = ["wordpad.exe", "CalculatorApp.exe", "excel.exe"]
 procesos_activos = []
 ultimos_tiempos_cpu = {}  # Almacena {pid: (tiempo_cpu, timestamp)}
 ultima_actualizacion = None  # Almacena el tiempo de la última actualización
@@ -52,7 +52,7 @@ def calcular_porcentaje_cpu(pid, tiempo_actual, intervalo):
 def obtener_procesos():
     try:
         wordpad = root.tk.call('exec', 'tasklist','/FI','IMAGENAME eq wordpad.exe', '/V', '/FO', 'list')
-        calc = root.tk.call('exec', 'tasklist','/FI','IMAGENAME eq calc.exe', '/V', '/FO', 'list')
+        calc = root.tk.call('exec', 'tasklist','/FI','IMAGENAME eq CalculatorApp.exe', '/V', '/FO', 'list')
         excel = root.tk.call('exec', 'tasklist','/FI','IMAGENAME eq excel.exe', '/V', '/FO', 'list')
         if (wordpad.startswith("INFO")):
             wordpad = ""
@@ -138,13 +138,26 @@ def cerrar_proceso():
     for pid in seleccionado:
         valores = tree.item(pid)["values"]
         if valores and valores[0]:
-            programa = valores[1]
-            tree.delete(pid)
-            procesos_activos[:] = [p for p in procesos_activos if p[0] != pid]
             try:
-                root.tk.call('exec', 'taskkill', '/PID', pid, '/F')
-                if pid in ultimos_tiempos_cpu:
+                #Convertir PID a entero para corregir caracteres no deseados
+                pid_int = int(valores[0])
+                programa = valores[1]
+
+                #Eliminar proceso en Windows
+                root.tk.call('exec', 'taskkill', '/PID', str(pid_int), '/F')
+
+                #Actualizar interfaz
+                tree.delete(pid)
+                procesos_activos[:] = [p for p in procesos_activos if p[0] != valores[0]]
+                
+                if valores[0] in ultimos_tiempos_cpu:
                     del ultimos_tiempos_cpu[pid]
+
+            except ValueError:
+                print(f"Error: PID '{valores[0]}' no es numérico")
+                # Muestra mensaje en interfaz
+                tree.item(pid, tags=('error',))
+                tree.tag_configure('error', background='#ffdddd')
             except Exception as e:
                 print(f"No se pudo cerrar {programa}: {e}")
 
