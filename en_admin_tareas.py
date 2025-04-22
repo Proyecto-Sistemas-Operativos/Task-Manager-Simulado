@@ -183,15 +183,20 @@ def cerrar_proceso():
                 print(f"No se pudo cerrar {programa}: {e}")
 
 def actualizar_recursos():
-    for item in tree.get_children():
-        tree.delete(item)
-
+    actuales = set(tree.get_children())
     obtener_procesos()
 
     for proceso in procesos_activos:
-        tree.insert("", "end", iid=proceso[0], values=(proceso[0], proceso[1], proceso[2],
+        if (proceso[0] in actuales):
+            tree.item(proceso[0], values=(proceso[0], proceso[1], proceso[2],
         proceso[3], proceso[4]))
-    
+            actuales.discard(proceso[0])
+        else:
+            tree.insert("", "end", iid=proceso[0], values=(proceso[0], proceso[1], proceso[2],
+        proceso[3], proceso[4]))
+
+    for item in actuales:
+        tree.delete(item)
     root.after(2000, actualizar_recursos)
     
 
