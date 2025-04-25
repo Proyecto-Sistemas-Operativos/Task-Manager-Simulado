@@ -208,13 +208,20 @@ def cerrar_proceso():
                 print(f"No se pudo cerrar {programa}: {e}")     # Imprime un mensaje de error en la consola indicando qué programa no se pudo cerrar y la descripción del error.              
 
 def actualizar_recursos():
+    actuales = set(tree.get_children())
     obtener_procesos()
 
-    for item in tree.get_children():
-        tree.delete(item)
-
     for proceso in procesos_activos:
-        tree.insert("", "end", iid=proceso[0], values=(proceso[0], proceso[1], proceso[2], proceso[3], proceso[4]))        # Se inserta una nueva fila en el Treeview al final ("end") con la información del nuevo proceso.
+        if (proceso[0] in actuales):
+            tree.item(proceso[0], values=(proceso[0], proceso[1], proceso[2],
+        proceso[3], proceso[4]))
+            actuales.discard(proceso[0])
+        else:
+            tree.insert("", "end", iid=proceso[0], values=(proceso[0], proceso[1], proceso[2],
+        proceso[3], proceso[4]))
+
+    for item in actuales:
+        tree.delete(item)
 
 def detener_bucle_actualizador():
     global intervalo_id, intervalo_check
