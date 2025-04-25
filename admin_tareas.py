@@ -245,13 +245,12 @@ def reiniciar_bucle_actualizador(tiempo = 2000):
     intervalo_id = root.after(tiempo, lambda: reiniciar_bucle_actualizador(tiempo) if intervalo_check else None)
 
 def mostrar_alerta(tipo, mensaje):
-    match tipo:
-        case "info":
-            messagebox.showinfo("Información", mensaje)
-        case "error":
-            messagebox.showerror("Error", mensaje)
-        case _:
-            print("Tipo de alerta no válido.")
+    if tipo == "info":
+        messagebox.showinfo("Información", mensaje)
+    elif tipo == "error":
+        messagebox.showerror("Error", mensaje)
+    else:
+        print("Tipo de alerta no válido.")
 
 # --- Interfaz de controles ---
 frame_botones = tk.Frame(root)      # Crea un Frame para contener los botones y el menú.
