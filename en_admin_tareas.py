@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
 
-PROGRAMAS_DISPONIBLES = ["wordpad.exe", "calc.exe", "excel.exe"]
+PROGRAMAS_DISPONIBLES = ["wordpad.exe", "CalculatorApp.exe", "excel.exe"]
 procesos_activos = []   # Lista de procesos mostrados (PID, Programa, Estado, Uso CPU (%), Uso RAM (MB)).
 ultimos_tiempos_cpu = {}  # Almacena {pid: (tiempo_cpu, timestamp)}
 intervalo_check = True  # Bandera para controlar el intervalo de actualización autoprogramado.
