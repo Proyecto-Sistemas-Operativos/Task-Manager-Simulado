@@ -127,12 +127,12 @@ def parse_lista_procesos(tasklists):
                         data_proceso[key.strip()] = value.strip()
 
                 pid = data_proceso.get("PID")   # Obtiene el valor asociado a la clave "PID" del diccionario 'data_proceso'.
-                programa = data_proceso.get("Nombre de imagen")     # Obtiene el valor asociado a la clave "Nombre de imagen" del diccionario 'data_proceso'
+                programa = data_proceso.get("Nombre de imagen") or data_proceso.get("Image Name")     # Obtiene el valor asociado a la clave "Nombre de imagen" del diccionario 'data_proceso'
 
                 if not programa:
                     continue
 
-                estado_original=data_proceso.get("Estado", "Desconocido")   # Obtiene el valor asociado a la clave "Estado" del diccionario 'data_proceso'.
+                estado_original=data_proceso.get("Estado", "Desconocido") or data_proceso.get("Status", "Desconocido")   # Obtiene el valor asociado a la clave "Estado" del diccionario 'data_proceso'.
 
                 estado=traduccion_estados.get(estado_original, "En Ejecucion")
 
@@ -146,8 +146,9 @@ def parse_lista_procesos(tasklists):
                 else:
                     contador_programas[programa] = pid      # Se añade el nombre del programa al 'contador_programas' con su PID asociado.
 
-                ram = data_proceso.get("Uso de memoria", "0 K").replace(".", "").split()[0]     # Obtiene el valor asociado a la clave "Uso de memoria"
-                cpu = data_proceso.get("Tiempo de CPU", "0:00:00")      # Obtiene el valor asociado a la clave "Tiempo de CPU"
+                ram = data_proceso.get("Uso de memoria", "0 K") or data_proceso.get("Mem Usage", "0 K")
+                ram = ram.replace(".", "").split()[0]     # Obtiene el valor asociado a la clave "Uso de memoria"
+                cpu = data_proceso.get("Tiempo de CPU", "0:00:00") or data_proceso.get("CPU Time", "0:00:00")      # Obtiene el valor asociado a la clave "Tiempo de CPU"
                 ram_mb = int(ram) / 1024 if ram.isdigit() else 0      # Convierte el uso de RAM de kilobytes (K) a megabytes (MB).
 
                 # Calcular uso de CPU
